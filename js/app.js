@@ -62,7 +62,9 @@
     { id: "farm", name: "清新原野", colors: ["#f8fbff", "#a8c9e0", "#7fa9c9"] },
     { id: "night", name: "柔蓝夜雾", colors: ["#eef2f8", "#93a9c4", "#5c7394"] },
     { id: "beach", name: "蜜桃浅滩", colors: ["#fff6f2", "#f7b9b9", "#e88f9d"] },
-    { id: "vintage", name: "奶油复古", colors: ["#fdf8ec", "#e6c79a", "#c9a27a"] }
+    { id: "vintage", name: "奶油复古", colors: ["#fdf8ec", "#e6c79a", "#c9a27a"] },
+    { id: "dark", name: "黑夜", colors: ["#12151d", "#2a3447", "#8fb2d0"] },
+    { id: "eyecare", name: "护眼", colors: ["#d5e3d2", "#6f9d6e", "#c8ddb8"] }
   ];
 
   var STOCK_CLS = { waiting: "gray", instock: "green", sold: "gold" };
@@ -340,6 +342,135 @@
     list.forEach(function (e) { if (e.type === "income") inc += num(e.amount); else exp += num(e.amount); });
     return { income: round2(inc), expense: round2(exp), balance: round2(inc - exp) };
   }
+  var CHART_COLORS = ["#f2b84b", "#f2a3b3", "#9ed6b4", "#7fb3c9", "#e2c3a0", "#b7a6dd"];
+  var BAR_GRAD = 0;
+  function chartMoney(v) { return "¥" + Math.round(v).toLocaleString("zh-CN"); }
+  function donutChartHtml(income, expense) {
+    var total = income + expense;
+    if (total <= 0) return '<div class="chart-empty">本月暂无收支数据</div>';
+    var R = 38, SW = 17, C = 50;
+    var circ = 2 * Math.PI * R;
+    var pInc = income / total, pExp = expense / total;
+    var seg = function (len, off, color) {
+      return '<circle cx="50" cy="50" r="' + R + '" fill="none" stroke="' + color + '" stroke-width="' + SW + '" stroke-dasharray="' + len.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '" transform="rotate(-90 50 50)"/>';
+    };
+    return '<svg class="chart-svg" viewBox="0 0 100 120" width="100%" height="auto" aria-hidden="true">' +
+      '<g filter="drop-shadow(0 4px 6px rgba(90,120,160,.22))">' +
+      '<circle cx="50" cy="53.5" r="' + R + '" fill="none" stroke="rgba(90,120,160,.16)" stroke-width="' + SW + '"/>' +
+      seg(circ * pExp, 0, "var(--pink)") +
+      seg(circ * pInc, -circ * pExp, "var(--accent)") +
+      '<circle cx="50" cy="50" r="' + R + '" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5" stroke-linecap="round" stroke-dasharray="' + (circ * 0.16).toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (circ * 0.05).toFixed(2) + '" transform="rotate(-90 50 50)"/>' +
+      "</g>" +
+      '<text x="50" y="45" text-anchor="middle" class="chart-center-k">本月结余</text>' +
+      '<text x="50" y="63" text-anchor="middle" class="chart-center-v">' + chartMoney(income - expense) + "</text>" +
+      "</svg>" +
+      '<div class="chart-legend">' +
+      '<div class="lg-item"><i style="background:var(--accent)"></i><span>收入</span><b>' + money(income) + "</b><em>" + Math.round(pInc * 100) + "%</em></div>" +
+      '<div class="lg-item"><i style="background:var(--pink)"></i><span>支出</span><b>' + money(expense) + "</b><em>" + Math.round(pExp * 100) + "%</em></div>" +
+      "</div>";
+  }
+  function lineChartHtml() {
+    var map = {};
+    ledgerEntries().forEach(function (e) {
+      var d = String(e.date || "");
+      var k = d.length >= 10 ? d.slice(8, 10) : "00";
+      if (!map[k]) map[k] = { inc: 0, exp: 0 };
+      var a = num(e.amount);
+      if (e.type === "income") map[k].inc += a; else map[k].exp += a;
+    });
+    var now = new Date();
+    var m = ui.ledgerMonth || ledgerMonth();
+    var yp = m.split("-"), y = +yp[0], mo = +yp[1];
+    var dim = new Date(y, mo, 0).getDate();
+    var endDay = (y === now.getFullYear() && mo === now.getMonth() + 1) ? now.getDate() : dim;
+    var pts = [], max = 0;
+    for (var d = 1; d <= endDay; d++) {
+      var rec = map[String(d).padStart(2, "0")] || { inc: 0, exp: 0 };
+      pts.push({ d: d, inc: rec.inc, exp: rec.exp });
+      max = Math.max(max, rec.inc, rec.exp);
+    }
+    if (max <= 0) return '<div class="chart-empty">本月暂无收支数据</div>';
+    var W = 320, H = 140, pl = 8, pr = 8, pt = 10, pb = 18;
+    var iw = W - pl - pr, ih = H - pt - pb;
+    var maxV = Math.max(1, Math.ceil(max / 100) * 100);
+    var x = function (i) { return pl + (pts.length === 1 ? iw / 2 : i / (pts.length - 1) * iw); };
+    var y = function (v) { return pt + ih - v / maxV * ih; };
+    var ptsOf = function (key) { return pts.map(function (p, i) { return x(i) + "," + y(p[key]).toFixed(1); }).join(" "); };
+    var incP = ptsOf("inc"), expP = ptsOf("exp");
+    var grid = [0, 0.5, 1].map(function (g) {
+      var yy = y(maxV * g);
+      return '<line x1="' + pl + '" y1="' + yy + '" x2="' + (W - pr) + '" y2="' + yy + '" class="chart-gridline"/><text x="' + (W - pr - 3) + '" y="' + (yy + 3) + '" text-anchor="end" class="chart-ytick">' + chartMoney(maxV * g) + "</text>";
+    }).join("");
+    var idxs = [0, Math.floor((pts.length - 1) / 2), pts.length - 1];
+    var ticks = idxs.map(function (i) { return '<text x="' + x(i).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle" class="chart-xtick">' + pts[i].d + "日</text>"; }).join("");
+    var nodes = function (str, color) {
+      return str.split(" ").map(function (c) {
+        var xy = c.split(",");
+        return '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="3" fill="' + color + '" class="chart-node"/><circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="1.2" fill="#ffffff"/>';
+      }).join("");
+    };
+    return '<svg class="chart-svg" viewBox="0 0 ' + W + " " + H + '" width="100%" height="auto" aria-hidden="true">' +
+      grid +
+      '<g filter="drop-shadow(0 3px 4px rgba(90,120,160,.25))">' +
+      '<polyline points="' + expP + '" fill="none" stroke="rgba(150,100,120,.3)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,2)"/>' +
+      '<polyline points="' + expP + '" fill="none" stroke="var(--pink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<polyline points="' + incP + '" fill="none" stroke="rgba(90,140,190,.3)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,2)"/>' +
+      '<polyline points="' + incP + '" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+      nodes(expP, "var(--pink)") + nodes(incP, "var(--accent)") +
+      "</g>" +
+      ticks +
+      "</svg>" +
+      '<div class="chart-legend">' +
+      '<div class="lg-item"><i style="background:var(--accent)"></i><span>每日收入</span></div>' +
+      '<div class="lg-item"><i style="background:var(--pink)"></i><span>每日支出</span></div>' +
+      "</div>";
+  }
+  function barChartHtml() {
+    var cat = {};
+    ledgerEntries().forEach(function (e) {
+      if (e.type === "expense") { var c = e.category || "其他"; cat[c] = (cat[c] || 0) + num(e.amount); }
+    });
+    var keys = Object.keys(cat).sort(function (a, b) { return cat[b] - cat[a]; }).slice(0, 5);
+    if (!keys.length) return '<div class="chart-empty">本月暂无支出分类数据</div>';
+    var maxV = Math.max.apply(null, keys.map(function (k) { return cat[k]; }));
+    maxV = Math.max(1, Math.ceil(maxV / 100) * 100);
+    var W = 320, H = 150, pl = 8, pr = 8, pt = 20, pb = 26;
+    var iw = W - pl - pr, ih = H - pt - pb;
+    var step = iw / keys.length, bw = Math.min(34, step * 0.56);
+    var gid = "bg" + (++BAR_GRAD);
+    var bars = keys.map(function (k, i) {
+      var h = Math.max(4, cat[k] / maxV * ih);
+      var xc = pl + step * i + (step - bw) / 2;
+      var yc = pt + ih - h;
+      var col = CHART_COLORS[i % CHART_COLORS.length];
+      return '<g>' +
+        '<rect x="' + (xc + 2) + '" y="' + (yc + 3) + '" width="' + bw + '" height="' + h + '" rx="7" fill="' + col + '" opacity=".28"/>' +
+        '<rect x="' + xc + '" y="' + yc + '" width="' + bw + '" height="' + h + '" rx="7" fill="' + col + '" filter="drop-shadow(0 4px 5px rgba(90,120,160,.18))"/>' +
+        '<rect x="' + xc + '" y="' + yc + '" width="' + bw + '" height="' + h + '" rx="7" fill="url(#' + gid + ')"/>' +
+        '<rect x="' + (xc + 2.5) + '" y="' + (yc + 2.5) + '" width="' + (bw - 5) + '" height="' + Math.max(3, h - 3) + '" rx="6" fill="rgba(255,255,255,.32)"/>' +
+        '<text x="' + (xc + bw / 2) + '" y="' + (yc - 5) + '" text-anchor="middle" class="chart-vtick">' + chartMoney(cat[k]) + "</text>" +
+        '<text x="' + (xc + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle" class="chart-xtick">' + esc(k) + "</text>" +
+        "</g>";
+    }).join("");
+    return '<svg class="chart-svg" viewBox="0 0 ' + W + " " + H + '" width="100%" height="auto" aria-hidden="true">' +
+      '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#ffffff" stop-opacity=".5"/>' +
+      '<stop offset=".45" stop-color="#ffffff" stop-opacity="0"/>' +
+      '<stop offset="1" stop-color="#000000" stop-opacity=".12"/>' +
+      "</linearGradient></defs>" +
+      bars +
+      "</svg>" +
+      '<div class="chart-legend">' +
+      '<div class="lg-item"><span>支出分类（柱顶为金额）</span></div>' +
+      "</div>";
+  }
+  function ledgerChartsHtml() {
+    var st = ledgerSums(ledgerEntries());
+    return '<div class="chart-grid2">' +
+      '<div class="panel chart-panel"><h3>' + ic("chart", 16) + "收支占比</h3>" + donutChartHtml(st.income, st.expense) + "</div>" +
+      '<div class="panel chart-panel"><h3>' + ic("chart", 16) + "每日趋势</h3>" + lineChartHtml() + "</div>" +
+      '</div><div class="panel chart-panel"><h3>' + ic("chart", 16) + "支出分类排行</h3>" + barChartHtml() + "</div>";
+  }
   function renderLedger() {
     var list = ledgerEntries();
     var sums = ledgerSums(list);
@@ -361,7 +492,7 @@
       return summary + topHtml + '<div class="empty-state">' + ic("book", 56) + "<div>本月还没有账目<br>点下方工具栏「记一笔收入 / 支出」开始记录<br><em style=\"font-size:11px\">日常账本与海淘采购成本相互独立，互不混淆</em></div></div>";
     }
     var rows = list.map(ledgerRowHtml).join("");
-    return summary + topHtml + '<div class="ledger-list">' + rows + "</div>";
+    return summary + topHtml + ledgerChartsHtml() + '<div class="ledger-list">' + rows + "</div>";
   }
   function ledgerRowHtml(e) {
     var inc = e.type === "income";
@@ -442,32 +573,34 @@
   function statHtml(s) {
     return '<div class="stat"><span class="ico">' + ic(s.i, 26) + "</span><div><span class=\"v\">" + s.v + '</span><span class="k">' + s.k + "</span></div></div>";
   }
-  function statsSections() {
-    var st = ledgerSums(ledgerEntries());
+  function seaTradeSections() {
     var haul = [
       { i: "backpack", v: money(sumPurchases()), k: "总采购投入" },
       { i: "coin", v: money(sumSales()), k: "总销售收入" },
       { i: "star", v: money(sumProfit()), k: "总净利润" },
       { i: "box", v: stockCount("instock"), k: "库存现货" }
     ];
+    return '<div class="sec"><div class="sec-h">' + sticker("sec-haul", 26) + "<span>海淘进销利润</span></div>" +
+      '<div class="stat-grid">' + haul.map(statHtml).join("") + "</div></div>";
+  }
+  function dailySections() {
+    var st = ledgerSums(ledgerEntries());
     var daily = [
       { i: "coin", v: money(st.income), k: "本月收入" },
       { i: "heart", v: money(st.expense), k: "本月支出" },
       { i: "star", v: money(st.balance), k: "本月结余" },
       { i: "book", v: ledgerEntries().length, k: "本月笔数" }
     ];
-    return '<div class="sec"><div class="sec-h">' + sticker("sec-haul", 26) + "<span>海淘进销利润</span></div>" +
-      '<div class="stat-grid">' + haul.map(statHtml).join("") + "</div></div>" +
-      '<div class="sec"><div class="sec-h">' + sticker("sec-daily", 26) + "<span>日常生活收支</span></div>" +
+    return '<div class="sec"><div class="sec-h">' + sticker("sec-daily", 26) + "<span>日常生活收支</span></div>" +
       '<div class="stat-grid">' + daily.map(statHtml).join("") + "</div></div>";
   }
   function renderStats() {
     var el = $("#statsBar");
     if (ui.view !== "home") { el.innerHTML = ""; return; }
-    el.innerHTML = statsSections();
+    el.innerHTML = seaTradeSections();
   }
   function renderStatsView() {
-    $("#rightContent").innerHTML = statsSections();
+    $("#rightContent").innerHTML = dailySections();
   }
 
   function renderMore() {
@@ -628,12 +761,10 @@
   function renderHome() {
     var recentP = state.purchases.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, 4);
     var recentS = state.sales.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, 4);
-    var recentL = state.ledger.slice().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }).slice(0, 4);
     return '<div class="home-grid">' +
       '<section class="panel full"><h3>' + sticker("sec-recent", 22) + "最近记录</h3>" +
       '<div class="recent-block"><h4>' + ic("backpack", 16) + "最近采购</h4>" + miniList(recentP, "purchase") + "</div>" +
       '<div class="recent-block"><h4>' + ic("coin", 16) + "最近售卖</h4>" + miniList(recentS, "sale") + "</div>" +
-      '<div class="recent-block"><h4>' + ic("book", 16) + "最近账目</h4>" + ledgerMini(recentL) + "</div>" +
       "</section></div>";
   }
 
@@ -807,7 +938,7 @@
       "</section>" +
       '<section class="panel" style="grid-column:1/-1"><h3>' + ic("eye", 18) + "使用说明</h3>" +
       '<div class="desc">' +
-      "· 首页看板：实时汇总「海淘进销利润」与「日常生活收支」两大板块 8 项数据，下方为最近记录。<br>" +
+      "· 首页看板：汇总「海淘进销利润」4 项数据，下方为最近采购 / 售卖记录；「日常」与「统计」页独立展示日常生活收支，两域完全独立、互不打扰。<br>" +
       "· 底部导航：首页、采购（买入）、售卖（卖出+自动利润）、日常（生活收支账本）、统计、更多。<br>" +
       "· 采购 / 售卖：点右上角「模板」一键预填快速录入，卡片点击后从底部弹出详情与物流工具。<br>" +
       "· 日常账本：独立记录日常收入 / 支出，支持分类、金额、日期、备注、截图，按月度统计收支结余；与海淘采购成本分开核算、互不混淆。<br>" +

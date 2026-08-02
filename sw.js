@@ -1,12 +1,10 @@
-var CACHE = "sea-workbench-offline-v4";
+var CACHE = "sea-workbench-offline-v5";
 var ASSETS = [
   "./",
   "./index.html",
   "./css/style.css",
   "./js/icons.js",
   "./js/app.js",
-  "./js/qrcode.min.js",
-  "./fonts/PressStart2P.woff2",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/stickers/nav-home.png",
