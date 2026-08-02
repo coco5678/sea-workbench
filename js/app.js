@@ -1911,7 +1911,7 @@
   }
 
   function init() {
-    $("#logoIcon").innerHTML = ic("backpack", 46);
+    $("#logoIcon").innerHTML = ic("cinnamoroll", 46);
     renderThemeBtns();
     applyTheme(state.theme);
     bindGlobalEvents();
