@@ -345,9 +345,9 @@
   var CHART_COLORS = ["#f2b84b", "#f2a3b3", "#9ed6b4", "#7fb3c9", "#e2c3a0", "#b7a6dd"];
   var BAR_GRAD = 0;
   function chartMoney(v) { return "¥" + Math.round(v).toLocaleString("zh-CN"); }
-  function donutChartHtml(income, expense) {
+  function donutHtml(income, expense, centerK, centerVal, incLabel, expLabel, emptyTxt) {
     var total = income + expense;
-    if (total <= 0) return '<div class="chart-empty">本月暂无收支数据</div>';
+    if (total <= 0) return '<div class="chart-empty">' + (emptyTxt || "本月暂无收支数据") + "</div>";
     var R = 38, SW = 17, C = 50;
     var circ = 2 * Math.PI * R;
     var pInc = income / total, pExp = expense / total;
@@ -361,15 +361,18 @@
       seg(circ * pInc, -circ * pExp, "var(--accent)") +
       '<circle cx="50" cy="50" r="' + R + '" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5" stroke-linecap="round" stroke-dasharray="' + (circ * 0.16).toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (circ * 0.05).toFixed(2) + '" transform="rotate(-90 50 50)"/>' +
       "</g>" +
-      '<text x="50" y="45" text-anchor="middle" class="chart-center-k">本月结余</text>' +
-      '<text x="50" y="63" text-anchor="middle" class="chart-center-v">' + chartMoney(income - expense) + "</text>" +
+      '<text x="50" y="45" text-anchor="middle" class="chart-center-k">' + centerK + "</text>" +
+      '<text x="50" y="63" text-anchor="middle" class="chart-center-v">' + chartMoney(centerVal) + "</text>" +
       "</svg>" +
       '<div class="chart-legend">' +
-      '<div class="lg-item"><i style="background:var(--accent)"></i><span>收入</span><b>' + money(income) + "</b><em>" + Math.round(pInc * 100) + "%</em></div>" +
-      '<div class="lg-item"><i style="background:var(--pink)"></i><span>支出</span><b>' + money(expense) + "</b><em>" + Math.round(pExp * 100) + "%</em></div>" +
+      '<div class="lg-item"><i style="background:var(--accent)"></i><span>' + incLabel + "</span><b>" + money(income) + "</b><em>" + Math.round(pInc * 100) + "%</em></div>" +
+      '<div class="lg-item"><i style="background:var(--pink)"></i><span>' + expLabel + "</span><b>" + money(expense) + "</b><em>" + Math.round(pExp * 100) + "%</em></div>" +
       "</div>";
   }
-  function lineChartHtml() {
+  function donutChartHtml(income, expense) {
+    return donutHtml(income, expense, "本月结余", income - expense, "收入", "支出");
+  }
+  function dailyLineSeries() {
     var map = {};
     ledgerEntries().forEach(function (e) {
       var d = String(e.date || "");
@@ -383,13 +386,37 @@
     var yp = m.split("-"), y = +yp[0], mo = +yp[1];
     var dim = new Date(y, mo, 0).getDate();
     var endDay = (y === now.getFullYear() && mo === now.getMonth() + 1) ? now.getDate() : dim;
-    var pts = [], max = 0;
+    var pts = [];
     for (var d = 1; d <= endDay; d++) {
       var rec = map[String(d).padStart(2, "0")] || { inc: 0, exp: 0 };
-      pts.push({ d: d, inc: rec.inc, exp: rec.exp });
-      max = Math.max(max, rec.inc, rec.exp);
+      pts.push({ d: d + "日", inc: rec.inc, exp: rec.exp });
     }
-    if (max <= 0) return '<div class="chart-empty">本月暂无收支数据</div>';
+    return pts;
+  }
+  function seaLineSeries() {
+    var arr = [], idx = {}, today = new Date();
+    for (var i = 29; i >= 0; i--) {
+      var dt = new Date(today.getTime() - i * 86400000);
+      var iso = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+      idx[iso] = arr.length;
+      arr.push({ d: (dt.getMonth() + 1) + "/" + dt.getDate(), inc: 0, exp: 0 });
+    }
+    state.purchases.forEach(function (p) {
+      var iso = String(p.date || "").slice(0, 10);
+      if (idx[iso] == null) return;
+      arr[idx[iso]].exp += totalCost(p);
+    });
+    state.sales.forEach(function (s) {
+      var iso = String(s.date || "").slice(0, 10);
+      if (idx[iso] == null) return;
+      arr[idx[iso]].inc += num(s.price || 0);
+    });
+    return arr;
+  }
+  function lineHtml(pts, incLabel, expLabel, emptyTxt) {
+    var max = 0;
+    pts.forEach(function (p) { max = Math.max(max, p.inc, p.exp); });
+    if (max <= 0) return '<div class="chart-empty">' + (emptyTxt || "本月暂无收支数据") + "</div>";
     var W = 320, H = 140, pl = 8, pr = 8, pt = 10, pb = 18;
     var iw = W - pl - pr, ih = H - pt - pb;
     var maxV = Math.max(1, Math.ceil(max / 100) * 100);
@@ -402,7 +429,7 @@
       return '<line x1="' + pl + '" y1="' + yy + '" x2="' + (W - pr) + '" y2="' + yy + '" class="chart-gridline"/><text x="' + (W - pr - 3) + '" y="' + (yy + 3) + '" text-anchor="end" class="chart-ytick">' + chartMoney(maxV * g) + "</text>";
     }).join("");
     var idxs = [0, Math.floor((pts.length - 1) / 2), pts.length - 1];
-    var ticks = idxs.map(function (i) { return '<text x="' + x(i).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle" class="chart-xtick">' + pts[i].d + "日</text>"; }).join("");
+    var ticks = idxs.map(function (i) { return '<text x="' + x(i).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle" class="chart-xtick">' + pts[i].d + "</text>"; }).join("");
     var nodes = function (str, color) {
       return str.split(" ").map(function (c) {
         var xy = c.split(",");
@@ -421,25 +448,24 @@
       ticks +
       "</svg>" +
       '<div class="chart-legend">' +
-      '<div class="lg-item"><i style="background:var(--accent)"></i><span>每日收入</span></div>' +
-      '<div class="lg-item"><i style="background:var(--pink)"></i><span>每日支出</span></div>' +
+      '<div class="lg-item"><i style="background:var(--accent)"></i><span>' + incLabel + "</span></div>" +
+      '<div class="lg-item"><i style="background:var(--pink)"></i><span>' + expLabel + "</span></div>" +
       "</div>";
   }
-  function barChartHtml() {
-    var cat = {};
-    ledgerEntries().forEach(function (e) {
-      if (e.type === "expense") { var c = e.category || "其他"; cat[c] = (cat[c] || 0) + num(e.amount); }
-    });
-    var keys = Object.keys(cat).sort(function (a, b) { return cat[b] - cat[a]; }).slice(0, 5);
-    if (!keys.length) return '<div class="chart-empty">本月暂无支出分类数据</div>';
-    var maxV = Math.max.apply(null, keys.map(function (k) { return cat[k]; }));
+  function lineChartHtml() {
+    return lineHtml(dailyLineSeries(), "每日收入", "每日支出");
+  }
+  function barHtml(items, legendText, emptyTxt) {
+    items = items.slice().sort(function (a, b) { return b.value - a.value; }).slice(0, 5);
+    if (!items.length) return '<div class="chart-empty">' + (emptyTxt || "暂无分类数据") + "</div>";
+    var maxV = Math.max.apply(null, items.map(function (it) { return it.value; }));
     maxV = Math.max(1, Math.ceil(maxV / 100) * 100);
     var W = 320, H = 150, pl = 8, pr = 8, pt = 20, pb = 26;
     var iw = W - pl - pr, ih = H - pt - pb;
-    var step = iw / keys.length, bw = Math.min(34, step * 0.56);
+    var step = iw / items.length, bw = Math.min(34, step * 0.56);
     var gid = "bg" + (++BAR_GRAD);
-    var bars = keys.map(function (k, i) {
-      var h = Math.max(4, cat[k] / maxV * ih);
+    var bars = items.map(function (it, i) {
+      var h = Math.max(4, it.value / maxV * ih);
       var xc = pl + step * i + (step - bw) / 2;
       var yc = pt + ih - h;
       var col = CHART_COLORS[i % CHART_COLORS.length];
@@ -448,8 +474,8 @@
         '<rect x="' + xc + '" y="' + yc + '" width="' + bw + '" height="' + h + '" rx="7" fill="' + col + '" filter="drop-shadow(0 4px 5px rgba(90,120,160,.18))"/>' +
         '<rect x="' + xc + '" y="' + yc + '" width="' + bw + '" height="' + h + '" rx="7" fill="url(#' + gid + ')"/>' +
         '<rect x="' + (xc + 2.5) + '" y="' + (yc + 2.5) + '" width="' + (bw - 5) + '" height="' + Math.max(3, h - 3) + '" rx="6" fill="rgba(255,255,255,.32)"/>' +
-        '<text x="' + (xc + bw / 2) + '" y="' + (yc - 5) + '" text-anchor="middle" class="chart-vtick">' + chartMoney(cat[k]) + "</text>" +
-        '<text x="' + (xc + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle" class="chart-xtick">' + esc(k) + "</text>" +
+        '<text x="' + (xc + bw / 2) + '" y="' + (yc - 5) + '" text-anchor="middle" class="chart-vtick">' + chartMoney(it.value) + "</text>" +
+        '<text x="' + (xc + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle" class="chart-xtick">' + esc(it.name) + "</text>" +
         "</g>";
     }).join("");
     return '<svg class="chart-svg" viewBox="0 0 ' + W + " " + H + '" width="100%" height="auto" aria-hidden="true">' +
@@ -461,8 +487,31 @@
       bars +
       "</svg>" +
       '<div class="chart-legend">' +
-      '<div class="lg-item"><span>支出分类（柱顶为金额）</span></div>' +
+      '<div class="lg-item"><span>' + legendText + "</span></div>" +
       "</div>";
+  }
+  function barChartHtml() {
+    var cat = {};
+    ledgerEntries().forEach(function (e) {
+      if (e.type === "expense") { var c = e.category || "其他"; cat[c] = (cat[c] || 0) + num(e.amount); }
+    });
+    var items = Object.keys(cat).map(function (k) { return { name: k, value: cat[k] }; });
+    return barHtml(items, "支出分类（柱顶为金额）", "本月暂无支出分类数据");
+  }
+  function seaDonutChartHtml() {
+    return donutHtml(sumSales(), sumPurchases(), "总净利润", sumProfit(), "销售收入", "采购投入", "暂无海淘收支数据");
+  }
+  function seaLineChartHtml() {
+    return lineHtml(seaLineSeries(), "每日销售收入", "每日采购投入", "近30天暂无海淘收支数据");
+  }
+  function seaBarChartHtml() {
+    var cat = {};
+    state.purchases.forEach(function (p) {
+      var c = COUNTRIES[p.country] || p.country || "其他";
+      cat[c] = (cat[c] || 0) + totalCost(p);
+    });
+    var items = Object.keys(cat).map(function (k) { return { name: k, value: cat[k] }; });
+    return barHtml(items, "采购投入按国家（柱顶为金额）", "暂无海淘采购数据");
   }
   function ledgerChartsHtml() {
     var st = ledgerSums(ledgerEntries());
@@ -470,6 +519,12 @@
       '<div class="panel chart-panel"><h3>' + ic("chart", 16) + "收支占比</h3>" + donutChartHtml(st.income, st.expense) + "</div>" +
       '<div class="panel chart-panel"><h3>' + ic("chart", 16) + "每日趋势</h3>" + lineChartHtml() + "</div>" +
       '</div><div class="panel chart-panel"><h3>' + ic("chart", 16) + "支出分类排行</h3>" + barChartHtml() + "</div>";
+  }
+  function seaTradeChartsHtml() {
+    return '<div class="chart-grid2">' +
+      '<div class="panel chart-panel"><h3>' + ic("backpack", 16) + "海淘收支占比</h3>" + seaDonutChartHtml() + "</div>" +
+      '<div class="panel chart-panel"><h3>' + ic("chart", 16) + "海淘收支趋势</h3>" + seaLineChartHtml() + "</div>" +
+      '</div><div class="panel chart-panel"><h3>' + ic("chart", 16) + "采购投入国家排行</h3>" + seaBarChartHtml() + "</div>";
   }
   function renderLedger() {
     var list = ledgerEntries();
@@ -598,7 +653,8 @@
     el.innerHTML = seaTradeSections();
   }
   function renderStatsView() {
-    $("#rightContent").innerHTML = dailySections();
+    $("#rightContent").innerHTML = dailySections() +
+      '<div class="sec"><div class="sec-h">' + sticker("sec-haul", 26) + "<span>海淘收支图表</span></div>" + seaTradeChartsHtml() + "</div>";
   }
 
   function renderMore() {
