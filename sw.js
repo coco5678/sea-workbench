@@ -1,4 +1,4 @@
-var CACHE = "sea-workbench-offline-v1";
+var CACHE = "sea-workbench-offline-v2";
 var ASSETS = [
   "./",
   "./index.html",
@@ -8,7 +8,16 @@ var ASSETS = [
   "./js/qrcode.min.js",
   "./fonts/PressStart2P.woff2",
   "./manifest.webmanifest",
-  "./icons/icon.svg"
+  "./icons/icon.svg",
+  "./icons/stickers/nav-home.jpg",
+  "./icons/stickers/nav-purchase.jpg",
+  "./icons/stickers/nav-sale.jpg",
+  "./icons/stickers/nav-daily.jpg",
+  "./icons/stickers/nav-stats.jpg",
+  "./icons/stickers/nav-more.jpg",
+  "./icons/stickers/sec-haul.jpg",
+  "./icons/stickers/sec-daily.jpg",
+  "./icons/stickers/sec-recent.jpg"
 ];
 
 self.addEventListener("install", function (e) {

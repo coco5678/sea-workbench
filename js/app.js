@@ -14,6 +14,10 @@
   function round2(n) { return Math.round(n * 100) / 100; }
   function money(n) { return "¥" + (n || 0).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function ic(name, size) { return PixIcon(name, size || 18); }
+  function sticker(name, size) {
+    var s = size || 26;
+    return '<img class="stick" src="./icons/stickers/' + name + '.jpg" alt="" width="' + s + '" height="' + s + '">';
+  }
   function todayStr() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function shortDate(s) { return s ? String(s).slice(5) : ""; }
 
@@ -55,10 +59,10 @@
     "Viettel Post": "https://viettelpost.com.vn/"
   };
   var THEMES = [
-    { id: "farm", name: "原野原版", colors: ["#bcd6a8", "#6f9e5f", "#5b3e2b"] },
-    { id: "night", name: "雨夜森林", colors: ["#1b241e", "#7fb069", "#0f1612"] },
-    { id: "beach", name: "沙滩海盐", colors: ["#d9eef7", "#5f9db4", "#7aa5b5"] },
-    { id: "vintage", name: "复古暖棕", colors: ["#c9a27a", "#a0573a", "#6d4a2b"] }
+    { id: "farm", name: "清新原野", colors: ["#f8fbff", "#a8c9e0", "#7fa9c9"] },
+    { id: "night", name: "柔蓝夜雾", colors: ["#eef2f8", "#93a9c4", "#5c7394"] },
+    { id: "beach", name: "蜜桃浅滩", colors: ["#fff6f2", "#f7b9b9", "#e88f9d"] },
+    { id: "vintage", name: "奶油复古", colors: ["#fdf8ec", "#e6c79a", "#c9a27a"] }
   ];
 
   var STOCK_CLS = { waiting: "gray", instock: "green", sold: "gold" };
@@ -354,7 +358,7 @@
       return '<span class="lt-item"><b>' + esc(c) + '</b><i>' + money(cat[c]) + "</i></span>";
     }).join("") + "</div>" : "";
     if (!list.length) {
-      return summary + topHtml + '<div class="empty-state">' + ic("book", 56) + "<div>本月还没有账目<br>点右上角「记一笔收入 / 支出」开始记录<br><em style=\"font-size:11px\">日常账本与海淘采购成本相互独立，互不混淆</em></div></div>";
+      return summary + topHtml + '<div class="empty-state">' + ic("book", 56) + "<div>本月还没有账目<br>点下方工具栏「记一笔收入 / 支出」开始记录<br><em style=\"font-size:11px\">日常账本与海淘采购成本相互独立，互不混淆</em></div></div>";
     }
     var rows = list.map(ledgerRowHtml).join("");
     return summary + topHtml + '<div class="ledger-list">' + rows + "</div>";
@@ -406,7 +410,7 @@
       save();
       closeModal();
       renderAll();
-      renderRight();
+      renderSheet();
       toast("账目已保存");
     });
   }
@@ -431,37 +435,86 @@
     if (idx >= 0) state.ledger.splice(idx, 1);
     save();
     renderAll();
-    renderRight();
+    renderSheet();
     toast("账目已删除");
   }
 
+  function statHtml(s) {
+    return '<div class="stat"><span class="ico">' + ic(s.i, 26) + "</span><div><span class=\"v\">" + s.v + '</span><span class="k">' + s.k + "</span></div></div>";
+  }
+  function statsSections() {
+    var st = ledgerSums(ledgerEntries());
+    var haul = [
+      { i: "backpack", v: money(sumPurchases()), k: "总采购投入" },
+      { i: "coin", v: money(sumSales()), k: "总销售收入" },
+      { i: "star", v: money(sumProfit()), k: "总净利润" },
+      { i: "box", v: stockCount("instock"), k: "库存现货" }
+    ];
+    var daily = [
+      { i: "coin", v: money(st.income), k: "本月收入" },
+      { i: "heart", v: money(st.expense), k: "本月支出" },
+      { i: "star", v: money(st.balance), k: "本月结余" },
+      { i: "book", v: ledgerEntries().length, k: "本月笔数" }
+    ];
+    return '<div class="sec"><div class="sec-h">' + sticker("sec-haul", 26) + "<span>海淘进销利润</span></div>" +
+      '<div class="stat-grid">' + haul.map(statHtml).join("") + "</div></div>" +
+      '<div class="sec"><div class="sec-h">' + sticker("sec-daily", 26) + "<span>日常生活收支</span></div>" +
+      '<div class="stat-grid">' + daily.map(statHtml).join("") + "</div></div>";
+  }
   function renderStats() {
-    var net = sumProfit();
     var el = $("#statsBar");
-    el.innerHTML =
-      '<div class="stat"><span class="ico">' + ic("backpack", 34) + "</span><div><span class=\"v\">" + money(sumPurchases()) + '</span><span class="k">总采购投入</span></div></div>' +
-      '<div class="stat"><span class="ico">' + ic("coin", 34) + "</span><div><span class=\"v\">" + money(sumSales()) + '</span><span class="k">总销售收入</span></div></div>' +
-      '<div class="stat gold"><span class="ico">' + ic("star", 34) + "</span><div><span class=\"v\">" + money(net) + '</span><span class="k">总净利润</span></div></div>' +
-      '<div class="stat"><span class="ico">' + ic("box", 34) + "</span><div><span class=\"v\">" + stockCount("instock") + '</span><span class="k">库存现货</span></div></div>' +
-      '<div class="stat"><span class="ico">' + ic("truck", 34) + "</span><div><span class=\"v\">" + inTransitCount() + '</span><span class="k">在途包裹</span></div></div>';
+    if (ui.view !== "home") { el.innerHTML = ""; return; }
+    el.innerHTML = statsSections();
+  }
+  function renderStatsView() {
+    $("#rightContent").innerHTML = statsSections();
   }
 
-  function renderSidebar() {
+  function renderMore() {
+    $("#rightContent").innerHTML = renderData();
+  }
+
+  function openSheet() { $("#detailSheet").hidden = false; }
+  function closeSheet() { $("#detailSheet").hidden = true; }
+  function renderSheet() {
+    var tabs = $("#rightTabs");
+    if (ui.view === "stats") { tabs.hidden = true; openSheet(); renderStatsView(); return; }
+    if (ui.view === "more") { tabs.hidden = true; openSheet(); renderMore(); return; }
+    tabs.hidden = false;
+    if (ui.view !== "purchases" && ui.view !== "sales") { closeSheet(); return; }
+    renderRight();
+  }
+
+  function renderBottomNav() {
     var items = [
-      { v: "home", i: "home", t: "首页汇总" },
-      { v: "purchases", i: "backpack", t: "采购入库" },
-      { v: "sales", i: "list", t: "售卖台账" },
-      { v: "ledger", i: "book", t: "日常账本" },
-      { v: "logistics", i: "truck", t: "物流追踪" },
-      { v: "data", i: "box", t: "数据管理" }
+      { v: "home", s: "nav-home", t: "首页" },
+      { v: "purchases", s: "nav-purchase", t: "采购" },
+      { v: "sales", s: "nav-sale", t: "售卖" },
+      { v: "ledger", s: "nav-daily", t: "日常" },
+      { v: "stats", s: "nav-stats", t: "统计" },
+      { v: "more", s: "nav-more", t: "更多" }
     ];
-    $("#sidebar").innerHTML = items.map(function (it) {
-      return '<button class="nav' + (ui.view === it.v ? " on" : "") + '" data-view="' + it.v + '">' + ic(it.i, 22) + "<span>" + it.t + "</span></button>";
+    $("#bottomNav").innerHTML = items.map(function (it) {
+      return '<button class="nav' + (ui.view === it.v ? " on" : "") + '" data-view="' + it.v + '">' +
+        '<span class="nav-ico">' + sticker(it.s, 26) + "</span>" +
+        "<span>" + it.t + "</span></button>";
     }).join("");
   }
 
   function renderToolbar() {
     var t = $("#toolbar");
+    if (ui.view === "stats" || ui.view === "more") { t.innerHTML = ""; return; }
+    if (ui.view === "home") {
+      t.innerHTML =
+        '<div class="search-box">' + ic("search", 18) +
+        '<input id="searchInput" type="search" placeholder="搜索商品 / 品牌 / 卖家 / 单号…" value="' + esc(ui.q) + '"></div>' +
+        '<div class="toolbar-actions">' +
+        '<button class="btn gold" id="btnTemplatePurchase">' + ic("plus", 14) + "采购模板</button>" +
+        '<button class="btn" id="btnTemplateSale">' + ic("plus", 14) + "售卖模板</button>" +
+        "</div>";
+      bindToolbarEvents();
+      return;
+    }
     if (ui.view === "ledger") {
       t.innerHTML =
         '<div class="search-box">' + ic("search", 18) +
@@ -496,6 +549,16 @@
       ui.q = si.value;
       renderMain();
     });
+    si.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && ui.view === "home" && si.value.trim()) {
+        ui.view = "purchases";
+        renderBottomNav();
+        renderStats();
+        renderToolbar();
+        renderMain();
+        renderSheet();
+      }
+    });
     var fc = $("#fCountry");
     if (fc) fc.addEventListener("change", function () { ui.country = fc.value; renderMain(); });
     var fl = $("#fLs");
@@ -507,7 +570,7 @@
     var bs = $("#btnTemplateSale");
     if (bs) bs.addEventListener("click", function () { openSale(); });
     var lm = $("#ledgerMonth");
-    if (lm) lm.addEventListener("change", function () { ui.ledgerMonth = lm.value; renderMain(); renderRight(); });
+    if (lm) lm.addEventListener("change", function () { ui.ledgerMonth = lm.value; renderMain(); renderSheet(); });
     var bi = $("#btnLedgerIncome");
     if (bi) bi.addEventListener("click", function () { openLedger({ type: "income" }); });
     var be = $("#btnLedgerExpense");
@@ -551,17 +614,27 @@
     return '<div class="empty-state">' + ic("box", 56) + "<div>" + esc(msg) + "</div></div>";
   }
 
+  function ledgerMini(items) {
+    if (!items.length) return '<div class="empty-state">暂无账目</div>';
+    return '<div class="mini-list">' + items.map(function (e) {
+      var inc = e.type === "income";
+      return '<div class="mini-item" data-jump="ledger:' + e.id + '">' +
+        (e.image ? '<img src="' + e.image + '" alt="">' : '<div class="ph">' + ic("box", 24) + "</div>") +
+        '<div class="mi-txt"><div class="mi-n">' + esc(e.category || (inc ? "收入" : "支出")) + '</div><div class="mi-m">' + esc(e.remark || "—") + "</div></div>" +
+        '<div class="mi-v ' + (inc ? "inc" : "exp") + '">' + (inc ? "+" : "-") + money(e.amount) + "</div></div>";
+    }).join("") + "</div>";
+  }
+
   function renderHome() {
     var recentP = state.purchases.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, 4);
     var recentS = state.sales.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, 4);
-    var ins = aiInsights();
-    var insHtml = ins.length ? '<ul class="insights">' + ins.map(function (i) { return "<li>" + i + "</li>"; }).join("") + "</ul>"
-      : '<div class="empty-state">' + ic("heart", 40) + "<div>录入几条数据后，AI 会给出经营洞察</div></div>";
+    var recentL = state.ledger.slice().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }).slice(0, 4);
     return '<div class="home-grid">' +
-      '<section class="panel" style="grid-column:1/-1"><h3>' + ic("chart", 18) + "AI 经营洞察</h3>" + insHtml + "</section>" +
-      '<section class="panel"><h3>' + ic("backpack", 18) + "最近采购</h3>" + miniList(recentP, "purchase") + "</section>" +
-      '<section class="panel"><h3>' + ic("coin", 18) + "最近售卖</h3>" + miniList(recentS, "sale") + "</section>" +
-      "</div>";
+      '<section class="panel full"><h3>' + sticker("sec-recent", 22) + "最近记录</h3>" +
+      '<div class="recent-block"><h4>' + ic("backpack", 16) + "最近采购</h4>" + miniList(recentP, "purchase") + "</div>" +
+      '<div class="recent-block"><h4>' + ic("coin", 16) + "最近售卖</h4>" + miniList(recentS, "sale") + "</div>" +
+      '<div class="recent-block"><h4>' + ic("book", 16) + "最近账目</h4>" + ledgerMini(recentL) + "</div>" +
+      "</section></div>";
   }
 
   function miniList(items, type) {
@@ -734,15 +807,14 @@
       "</section>" +
       '<section class="panel" style="grid-column:1/-1"><h3>' + ic("eye", 18) + "使用说明</h3>" +
       '<div class="desc">' +
-      "· 顶部看板：实时汇总「总采购投入 / 总销售收入 / 总净利润 / 在库 / 在途」。<br>" +
-      "· 左侧导航：采购入库（买入）、售卖台账（卖出+自动利润）、日常账本（生活收支）、物流追踪、数据管理。<br>" +
-      "· 日常账本：独立模块记录日常收入 / 支出，支持分类、金额、日期、备注、截图，按月度统计收支结余；与海淘采购成本分开核算、互不混淆。<br>" +
-      "· 搜索：顶部搜索框全局检索商品名、品牌、卖家、物流单号，修改名称后实时生效。<br>" +
-      "· 筛选：按购入国家、物流状态、现货状态筛选。<br>" +
-      "· 模板：右上角「采购 / 售卖」模板一键预填，快速录入。<br>" +
+      "· 首页看板：实时汇总「海淘进销利润」与「日常生活收支」两大板块 8 项数据，下方为最近记录。<br>" +
+      "· 底部导航：首页、采购（买入）、售卖（卖出+自动利润）、日常（生活收支账本）、统计、更多。<br>" +
+      "· 采购 / 售卖：点右上角「模板」一键预填快速录入，卡片点击后从底部弹出详情与物流工具。<br>" +
+      "· 日常账本：独立记录日常收入 / 支出，支持分类、金额、日期、备注、截图，按月度统计收支结余；与海淘采购成本分开核算、互不混淆。<br>" +
+      "· 搜索：首页顶部搜索框全局检索商品名、品牌、卖家、物流单号，修改名称后实时生效。<br>" +
+      "· 物流工具：详情面板内「物流工具」标签可登记泰/越/菲快递单号，并绑定到采购卡片。<br>" +
       "· 图片：采购卡片支持上传商品截图，点图放大。<br>" +
-      "· 物流工具：右侧「物流工具」或「物流追踪」板块登记泰/越/菲快递单号，可绑定到采购卡片。<br>" +
-      "· 主题：右上角皮肤按钮或数据管理页可切换 4 款皮肤。" +
+      "· 数据管理：更多页可导出 / 导入 JSON 备份、生成分享码、清空数据。" +
       "</div></section>" +
       "</div>";
   }
@@ -752,7 +824,7 @@
     if (ui.rightTab === "tool") { renderTool(); return; }
     var sel = ui.selected;
     if (!sel) {
-      $("#rightContent").innerHTML = '<div class="empty-state">' + ic("eye", 56) + "<div>点击左侧卡片查看详情<br><br>顶部「物流工具」标签可登记快递单号</div></div>";
+      $("#rightContent").innerHTML = '<div class="empty-state">' + ic("eye", 56) + "<div>点击卡片查看详情<br><br>「物流工具」标签可登记快递单号</div></div>";
       return;
     }
     if (sel.type === "purchase") {
@@ -861,6 +933,8 @@
   }
 
   function renderTool() {
+    if (ui.view === "stats") { renderStatsView(); return; }
+    if (ui.view === "more") { renderMore(); return; }
     var tracks = state.tracks.slice().sort(function (a, b) { return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0); }).slice(0, 12);
     var html = '<div class="tool-intro">支持泰国 Flash Express / J&amp;T、越南 GHN、菲律宾 LBC 等主流快递。登记单号后可随时记录轨迹，并绑定到对应采购卡片，实现「一单到底」追踪。</div>' +
       '<form id="frmTrackTool" class="frm">' +
@@ -1374,6 +1448,7 @@
     ui.selected = { type: type, id: id };
     ui.rightTab = "detail";
     setRightTab("detail");
+    openSheet();
     renderRight();
     renderMain();
   }
@@ -1489,7 +1564,7 @@
   }
 
   function bindGlobalEvents() {
-    $("#sidebar").addEventListener("click", function (e) {
+    $("#bottomNav").addEventListener("click", function (e) {
       var b = e.target.closest("[data-view]");
       if (!b) return;
       ui.view = b.dataset.view;
@@ -1497,10 +1572,10 @@
       ui.country = "";
       ui.ls = "";
       ui.stock = "";
-      renderSidebar();
+      renderBottomNav();
       renderToolbar();
       renderMain();
-      renderRight();
+      renderSheet();
     });
 
     $("#rightTabs").addEventListener("click", function (e) {
@@ -1562,7 +1637,7 @@
       var parts = it.dataset.jump.split(":");
       var type = parts[0], id = parts.slice(1).join(":");
       ui.view = type === "purchase" ? "purchases" : "sales";
-      renderSidebar();
+      renderBottomNav();
       renderToolbar();
       selectCard(type, id);
       renderMain();
@@ -1643,11 +1718,11 @@
   }
 
   function renderAll() {
+    renderBottomNav();
     renderStats();
-    renderSidebar();
     renderToolbar();
     renderMain();
-    renderRight();
+    renderSheet();
   }
 
   function init() {
@@ -1656,6 +1731,7 @@
     applyTheme(state.theme);
     bindGlobalEvents();
     bindDataEvents();
+    $("#sheetClose").addEventListener("click", closeSheet);
     renderAll();
     if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
       navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(function () {});
