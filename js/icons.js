@@ -51,12 +51,17 @@
 
   var CHAR = {
     cinnamoroll:
-      '<path d="M8.3 8.6c-1.9-.6-2.7-2.5-1.5-4 1-1.2 2.9-.8 3.2 1.3" stroke="#cfe6f5" fill="#f4fbff"/><path d="M8.5 5.5c-.5-1.3 1.2-2 2-1.2" stroke="#9cc3e3"/>' +
-      '<path d="M15.7 8.6c1.9-.6 2.7-2.5 1.5-4-1-1.2-2.9-.8-3.2 1.3" stroke="#cfe6f5" fill="#f4fbff"/><path d="M15.5 5.5c.5-1.3-1.2-2-2-1.2" stroke="#9cc3e3"/>' +
-      '<path d="M12 8.3c-2.9 0-5.2 2.1-5.2 5.2 0 2.6 2.3 5 5.2 5s5.2-2.4 5.2-5c0-3.1-2.3-5.2-5.2-5.2z" fill="#ffffff" stroke="#9cc3e3"/>' +
-      '<circle cx="10.1" cy="12.2" r=".95" fill="#6ba8d8" stroke="none"/><circle cx="13.9" cy="12.2" r=".95" fill="#6ba8d8" stroke="none"/>' +
-      '<path d="M10.4 14.6c.9.9 2.3.9 3.2 0" stroke="#9cc3e3"/>' +
-      '<path d="M17.8 15.6c1.6-.4 2.8.7 2.3 2-.4 1-1.6 1.3-2.4.4" stroke="#9cc3e3" fill="#f4fbff"/>',
+      '<path d="M8.6 8.2c-2.1-.7-2.9-2.8-1.6-4.4 1.1-1.3 3.1-.9 3.4 1.4" stroke="#cfe6f5" fill="#f4fbff"/><path d="M8.7 4.9c-.6-1.4 1.1-2.1 1.9-1.3" stroke="#9cc3e3"/>' +
+      '<path d="M15.4 8.2c2.1-.7 2.9-2.8 1.6-4.4-1.1-1.3-3.1-.9-3.4 1.4" stroke="#cfe6f5" fill="#f4fbff"/><path d="M15.3 4.9c.6-1.4-1.1-2.1-1.9-1.3" stroke="#9cc3e3"/>' +
+      '<path d="M12 6.6c-3.2 0-5.4 2-5.4 4.7 0 2.5 2.3 4.6 5.4 4.6s5.4-2.1 5.4-4.6c0-2.7-2.2-4.7-5.4-4.7z" fill="#ffffff" stroke="#9cc3e3"/>' +
+      '<circle cx="10" cy="10.3" r=".95" fill="#6ba8d8" stroke="none"/><circle cx="14" cy="10.3" r=".95" fill="#6ba8d8" stroke="none"/>' +
+      '<circle cx="8" cy="11.8" r=".6" fill="#ffd9e6" stroke="none"/><circle cx="16" cy="11.8" r=".6" fill="#ffd9e6" stroke="none"/>' +
+      '<path d="M10.5 12.6c.9.9 2.1.9 3 0" stroke="#9cc3e3"/>' +
+      '<rect x="9" y="15.4" width="6" height="3.4" rx="1.7" fill="#ffffff" stroke="#9cc3e3"/>' +
+      '<path d="M18 15.2c1.6.3 2.8 1.6 2.6 3.1-.1 1.2-1.1 2.1-2.3 2.2" fill="#f4fbff" stroke="#9cc3e3"/><path d="M18.6 16.1c.9.2 1.6 1 1.5 1.9-.1.8-.8 1.4-1.6 1.3" stroke="#9cc3e3"/><circle cx="18.9" cy="18.9" r=".4" fill="#9cc3e3" stroke="none"/>' +
+      '<path d="M4.2 2.2l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#f4fbff" stroke="#9cc3e3"/>' +
+      '<path d="M6.6 18.2v2.6M5.3 19.5h2.6" stroke="#cfe6f5"/>' +
+      '<path d="M19.3 7a2.1 2.1 0 0 1-1.9-3.1 1.9 1.9 0 0 1 3.5-.7 1.7 1.7 0 0 1 2.1 1.2A1.7 1.7 0 0 1 19.3 7z" fill="#f4fbff" stroke="#cfe6f5"/>',
     pompompurin:
       '<path d="M8.3 8.4c-.4-1.6.5-3.1 2.1-3.2" stroke="#e7c99a"/><path d="M15.7 8.4c.4-1.6-.5-3.1-2.1-3.2" stroke="#e7c99a"/>' +
       '<path d="M6.8 9.2c.1-2.7 2.3-4.4 5.2-4.4s5.1 1.7 5.2 4.4" fill="#e7b98a" stroke="#b98a5a"/>' +
