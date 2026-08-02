@@ -1,5 +1,4 @@
 (function (global) {
-  var INK = "#3f6f9e";
   var ICON_CAP = 0;
 
   function tag(inner, size) {
@@ -10,14 +9,14 @@
     return '<svg class="pix stk" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" aria-hidden="true">' +
       '<defs>' +
       '<linearGradient id="' + id + 'g" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#f5f9ff"/><stop offset="1" stop-color="#e4edf7"/></linearGradient>' +
+      '<stop offset="0" stop-color="var(--icon-cap-bg1)"/><stop offset=".55" stop-color="var(--icon-cap-bg1)"/><stop offset="1" stop-color="var(--icon-cap-bg2)"/></linearGradient>' +
       '<filter id="' + id + 'f" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.1"/></filter>' +
       "</defs>" +
-      '<rect x="1.5" y="2.5" width="21" height="21" rx="6.3" fill="rgba(110,140,180,.26)" filter="url(#' + id + 'f)"/>' +
-      '<rect x="1" y="1" width="22" height="22" rx="6.3" fill="url(#' + id + 'g)" stroke="#d9e4f0" stroke-width="1.1"/>' +
-      '<rect x="1.8" y="1.6" width="20.4" height="5.8" rx="2.9" fill="rgba(255,255,255,.9)"/>' +
-      '<rect x="2.4" y="19.2" width="19.2" height="3.2" rx="1.6" fill="rgba(120,150,200,.07)"/>' +
-      '<g transform="translate(12,12) scale(' + k + ') translate(-12,-12)" stroke-width="' + sw + '" fill="none" stroke="' + INK + '" stroke-linecap="round" stroke-linejoin="round">' + inner + "</g>" +
+      '<rect x="1.5" y="2.5" width="21" height="21" rx="6.3" fill="var(--icon-cap-shadow)" filter="url(#' + id + 'f)"/>' +
+      '<rect x="1" y="1" width="22" height="22" rx="6.3" fill="url(#' + id + 'g)" stroke="var(--icon-cap-border)" stroke-width="1.1"/>' +
+      '<rect x="1.8" y="1.6" width="20.4" height="5.8" rx="2.9" fill="var(--icon-cap-sheen)"/>' +
+      '<rect x="2.4" y="19.2" width="19.2" height="3.2" rx="1.6" fill="var(--icon-cap-shade)"/>' +
+      '<g transform="translate(12,12) scale(' + k + ') translate(-12,-12)" stroke-width="' + sw + '" fill="none" stroke="var(--icon-ink)" stroke-linecap="round" stroke-linejoin="round">' + inner + "</g>" +
       "</svg>";
   }
 

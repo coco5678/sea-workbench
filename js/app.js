@@ -64,7 +64,10 @@
     { id: "beach", name: "蜜桃浅滩", colors: ["#fff6f2", "#f7b9b9", "#e88f9d"] },
     { id: "vintage", name: "奶油复古", colors: ["#fdf8ec", "#e6c79a", "#c9a27a"] },
     { id: "dark", name: "黑夜", colors: ["#12151d", "#2a3447", "#8fb2d0"] },
-    { id: "eyecare", name: "护眼", colors: ["#d5e3d2", "#6f9d6e", "#c8ddb8"] }
+    { id: "eyecare", name: "护眼", colors: ["#d5e3d2", "#6f9d6e", "#c8ddb8"] },
+    { id: "lavender", name: "薰衣草梦境", colors: ["#f6f3fd", "#b49fe0", "#8f76c9"] },
+    { id: "mint", name: "薄荷苏打", colors: ["#f1faf4", "#8fc7a9", "#58a383"] },
+    { id: "sunset", name: "落日汽水", colors: ["#fff6ec", "#f6b27c", "#e0863e"] }
   ];
 
   var STOCK_CLS = { waiting: "gray", instock: "green", sold: "gold" };
