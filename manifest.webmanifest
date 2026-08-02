@@ -1,0 +1,20 @@
+{
+  "name": "像素田园 · 个人海淘记录中心",
+  "short_name": "海淘记录中心",
+  "description": "个人海淘记录中心",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#bcd6a8",
+  "theme_color": "#5b3e2b",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
