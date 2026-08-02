@@ -1320,10 +1320,14 @@
       '<label>外币原价<input type="number" step="0.01" min="0" id="pprice" value="' + (c.price != null ? c.price : "") + '" placeholder="0"></label>' +
       '<label>代付汇率（1 元人民币 ≈ ? 外币）<input type="number" step="any" min="0" id="pfx" value="' + fx + '"></label>' +
       "</div>" +
-      '<div class="cur-wrap"><span class="cur-label">币种 · 左右滑动选择</span>' +
-      '<div class="cur-slider" id="curSlider">' + CURRENCY_LIST.map(function (cu) {
-        return '<button type="button" class="cur-chip' + (cu.code === curCode ? " on" : "") + '" data-cur="' + cu.code + '" data-rate="' + cu.rate + '">' + esc(cu.sym) + " " + esc(cu.code) + "</button>";
+      '<div class="cur-wrap"><span class="cur-label"><b>币种</b><em>上下滑动选择</em></span>' +
+      '<div class="cur-pick" id="curSlider">' +
+      '<button type="button" class="cur-arrow" data-cur-up aria-label="上一个币种">▲</button>' +
+      '<div class="cur-scroll">' + CURRENCY_LIST.map(function (cu) {
+        return '<button type="button" class="cur-chip' + (cu.code === curCode ? " on" : "") + '" data-cur="' + cu.code + '" data-rate="' + cu.rate + '">' +
+          '<span class="cur-sym">' + esc(cu.sym) + "</span><span class=\"cur-code\">" + esc(cu.code) + "</span><span class=\"cur-name\">" + esc(cu.name) + "</span></button>";
       }).join("") + "</div>" +
+      '<button type="button" class="cur-arrow" data-cur-down aria-label="下一个币种">▼</button>' +
       '<input type="hidden" id="pcur" value="' + esc(curCode) + '">' +
       "</div>" +
       '<div class="f-grid">' +
@@ -1469,14 +1473,52 @@
       if (el) el.addEventListener("input", recompute);
     });
     if (slider) {
-      slider.addEventListener("click", function (e) {
-        var chip = e.target.closest("[data-cur]");
-        if (!chip) return;
-        $$("#curSlider .cur-chip").forEach(function (b) { b.classList.toggle("on", b === chip); });
+      var scroll = slider.querySelector(".cur-scroll");
+      var chips = $$(".cur-chip", slider);
+      function pick(chip) {
+        chips.forEach(function (b) { b.classList.toggle("on", b === chip); });
         if (pcur) pcur.value = chip.dataset.cur;
         if (pfx) pfx.value = chip.dataset.rate;
         recompute();
+      }
+      function center() {
+        if (!scroll || !chips.length) return;
+        var mid = scroll.scrollTop + scroll.clientHeight / 2;
+        var best = chips[0], bd = 1e9;
+        chips.forEach(function (b) {
+          var d = Math.abs(b.offsetTop + b.offsetHeight / 2 - mid);
+          if (d < bd) { bd = d; best = b; }
+        });
+        pick(best);
+      }
+      function scrollToChip(chip) {
+        if (!scroll || !chip) return;
+        var top = chip.offsetTop - (scroll.clientHeight - chip.offsetHeight) / 2;
+        scroll.scrollTo({ top: top, behavior: "smooth" });
+      }
+      scroll.addEventListener("scroll", function () {
+        clearTimeout(scroll._tm);
+        scroll._tm = setTimeout(center, 90);
       });
+      scroll.addEventListener("click", function (e) {
+        var chip = e.target.closest("[data-cur]");
+        if (!chip) return;
+        scrollToChip(chip);
+        pick(chip);
+      });
+      var up = slider.querySelector("[data-cur-up]"), down = slider.querySelector("[data-cur-down]");
+      function step(dir) {
+        var on = chips.find(function (b) { return b.classList.contains("on"); }) || chips[0];
+        var i = chips.indexOf(on) + dir;
+        if (i < 0 || i >= chips.length) return;
+        scrollToChip(chips[i]);
+        pick(chips[i]);
+      }
+      if (up) up.addEventListener("click", function () { step(-1); });
+      if (down) down.addEventListener("click", function () { step(1); });
+      var cur = pcur ? pcur.value : "";
+      var on = chips.find(function (b) { return b.dataset.cur === cur; }) || chips[0];
+      if (on) scrollToChip(on);
     }
     recompute();
   }
