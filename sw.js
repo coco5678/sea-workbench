@@ -1,4 +1,4 @@
-var CACHE = "sea-workbench-offline-v2";
+var CACHE = "sea-workbench-offline-v3";
 var ASSETS = [
   "./",
   "./index.html",
