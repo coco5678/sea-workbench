@@ -488,11 +488,9 @@
     var topHtml = topCats.length ? '<div class="ledger-top"><span class="lt-k">支出分类 TOP</span>' + topCats.map(function (c) {
       return '<span class="lt-item"><b>' + esc(c) + '</b><i>' + money(cat[c]) + "</i></span>";
     }).join("") + "</div>" : "";
-    if (!list.length) {
-      return summary + topHtml + '<div class="empty-state">' + ic("book", 56) + "<div>本月还没有账目<br>点下方工具栏「记一笔收入 / 支出」开始记录<br><em style=\"font-size:11px\">日常账本与海淘采购成本相互独立，互不混淆</em></div></div>";
-    }
-    var rows = list.map(ledgerRowHtml).join("");
-    return summary + topHtml + ledgerChartsHtml() + '<div class="ledger-list">' + rows + "</div>";
+    var rows = list.length ? list.map(ledgerRowHtml).join("") : "";
+    return summary + topHtml + ledgerChartsHtml() +
+      (list.length ? '<div class="ledger-list">' + rows + "</div>" : '<div class="empty-state">' + ic("book", 56) + "<div>本月还没有账目<br>点下方工具栏「记一笔收入 / 支出」开始记录<br><em style=\"font-size:11px\">日常账本与海淘采购成本相互独立，互不混淆</em></div></div>");
   }
   function ledgerRowHtml(e) {
     var inc = e.type === "income";
