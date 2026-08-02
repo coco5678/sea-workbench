@@ -16,7 +16,7 @@
   function ic(name, size) { return PixIcon(name, size || 18); }
   function sticker(name, size) {
     var s = size || 26;
-    return '<img class="stick" src="./icons/stickers/' + name + '.jpg" alt="" width="' + s + '" height="' + s + '">';
+    return '<img class="stick" src="./icons/stickers/' + name + '.png" alt="" width="' + s + '" height="' + s + '">';
   }
   function todayStr() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function shortDate(s) { return s ? String(s).slice(5) : ""; }
